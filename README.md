@@ -7,25 +7,25 @@ This is how you initiate and start the Scheduler. If you are using it with Greas
 
 Add this script to your userscript using the require tag : 
 
+```javascript
 // @require		https://raw.githubusercontent.com/piyushsoni/GM_Scheduler/master/GM_Scheduler.js
+````
 
+
+```javascript
 //The callback you want to call every n seconds
-function callback()
+function callback()  
+{  
+	//..  
+	//..  
+	//..  
+}  
+````
 
-{
-
-	//..
-	
-	//..
-	
-	//..
-	
-}
-
-var scheduler = new GM_Scheduler(callback, 3600 /*run every hour*/, GM_setValue, GM_getValue, GM_log); 
-
-scheduler.Start();
-
+```javascript
+var scheduler = new GM_Scheduler(callback, 3600 /*run every hour*/, GM_setValue, GM_getValue, GM_log);  
+scheduler.Start();  
+````
 
 
 Irrespective of the number of pages open at a time on which this script runs, the script runs the method only once every <intervalInSeconds> seconds. 
