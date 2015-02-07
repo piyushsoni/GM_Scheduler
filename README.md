@@ -28,4 +28,4 @@ scheduler.Start();
 ````
 
 
-Irrespective of the number of pages open at a time on which this script runs, the script runs the method only once every <intervalInSeconds> seconds. 
+Irrespective of the number of pages open at a time on which this script runs, the script runs the method only once every [intervalInSeconds] seconds. 
