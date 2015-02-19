@@ -1,5 +1,5 @@
 // GM_Scheduler 
-// Version 1.51
+// Version 2.62
 // Copyright: Piyush Soni (http://piyushsoni.com)
 // License : CC BY-SA (http://creativecommons.org/licenses/by-sa/4.0/)
 //----
@@ -22,10 +22,39 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 
 		var guid = this.mGUID;
 		var thisObject = this;
-
-		var lastRunTime = new Date(this.GetValue(this.mGMKeyName, 0));
 		var currentTime = new Date();
+		var currentNumberOfTimes;
+
+		if(this.mRunForSeconds > 0)
+		{
+			var firstRunTime = this.GetValue(this.mGMKeyFirstStartTime, 0);
+			if(firstRunTime != 0)
+			{
+				firstRunTime = new Date(firstRunTime);
+				var totalElapsedTime = (currentTime - firstRunTime)/1000.0;
+				if(totalElapsedTime >= this.mRunForSeconds)
+				{
+					this.Log("Time duration over, going to stop all sessions.");
+					this.Stop();
+					return;
+				}
+			}
+		}
+		
+		if(this.mRunForNumberOfTimes > 0)
+		{
+			currentNumberOfTimes = this.GetValue(this.mGMKeyCurrentNumberOfTimes, 0);
+			if(currentNumberOfTimes >= this.mRunForNumberOfTimes)
+			{
+				this.Log("Max number of calls (" + this.mRunForNumberOfTimes + ") reached, going to stop all sessions.");
+				this.Stop();
+				return;
+			}
+		}
+
+		var lastRunTime = new Date(this.GetValue(this.mGMKeyLastRun, 0));
 		var timeElapsed = (currentTime - lastRunTime)/1000.0;
+		
 		if(timeElapsed < this.mIntervalInSeconds)
 		{
 			this.Log(this.mGUID + ": " + this.mFuntionName + ' not executed,  ' + (this.mIntervalInSeconds - timeElapsed) + ' seconds remaining.');
@@ -41,8 +70,13 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 			//Minimize race conditions. Get the same value a few times. 
 			if(this.mActive && !this.GetValue(this.mGMKeyAllStopped, true) && !this.GetValue(this.mGMKeyAllStopped, true) && !this.GetValue(this.mGMKeyAllStopped, true) && !this.GetValue(this.mGMKeyAllStopped, true))
 			{
+				if(this.mRunForNumberOfTimes > 0)
+					this.SetValue(this.mGMKeyCurrentNumberOfTimes, (currentNumberOfTimes + 1));
+				if(this.mRunForSeconds > 0 && this.GetValue(this.mGMKeyFirstStartTime, 0) == 0)
+					this.SetValue(this.mGMKeyFirstStartTime, currentTime);
+					
+				this.SetValue(this.mGMKeyLastRun, currentTime);
 				this.mRunFunction();
-				this.SetValue(this.mGMKeyName, currentTime);
 				this.Log(this.mGUID + ": " + this.mFuntionName + ' executed.');
 				window.setTimeout(function() { thisObject.Test(); }, (this.mIntervalInSeconds) * 1000);
 			}
@@ -64,20 +98,60 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 		}
 		
 		this.mActive = true;
-		this.SetValue(this.mGMKeyAllStopped, false);
+		
+		if(this.GetValue(this.mGMKeyAllStopped, true))
+		{
+			// this.ResetCounters();
+			this.SetValue(this.mGMKeyLastRun, 0);
+			this.SetValue(this.mGMKeyAllStopped, false);
+		}
+		
 		if(dontCallAtTimeZero)
 		{
 			var currentTime = new Date();
-			this.SetValue(this.mGMKeyName, currentTime);
+			this.SetValue(this.mGMKeyLastRun, currentTime);
+			if(this.GetValue(this.mGMKeyFirstStartTime, 0) == 0)
+				this.SetValue(this.mGMKeyFirstStartTime, currentTime);
 		}
+		
 		this.Test();
 	}
 	
-	this.Stop = function(doStopAllSessions)
+	this.Stop = function(stopJustThisSession /*stops all by default*/)
 	{
 		this.mActive = false;
-		if(doStopAllSessions)
+		if(!stopJustThisSession)
+		{
 			this.SetValue(this.mGMKeyAllStopped, true);
+			this.Log('Stopping all sessions.');
+		}
+		else
+			this.Log(this.mGUID + ": " + " Stopping.");
+		
+		
+		this.SetValue(this.mGMKeyLastRun, 0);
+		//Don't reset the counters by default here. 
+		// this.ResetCounters();
+	}
+	
+	this.ResetCounters = function()
+	{
+		this.SetValue(this.mGMKeyFirstStartTime, 0);
+		this.SetValue(this.mGMKeyLastRun, 0);
+		this.SetValue(this.mGMKeyCurrentNumberOfTimes, 0);
+		this.mActive = false;
+	}
+	
+	//Start after resetting all (Time/Number) counters. Call it only once from one of the scripts. 
+	this.Restart = function()
+	{
+		this.ResetCounters();
+		this.Start();
+	}
+	
+	this.IsRunning = function()
+	{
+		return !this.GetValue(this.mGMKeyAllStopped, true);
 	}
 	
 	this.GenerateGUID = function()
@@ -112,18 +186,56 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 		this.Log = this.IsUndefined(func) ? function() {} : func;
 	}
 	
+	this.RunForNumberOfTimes = function(maxTimes)
+	{
+		if(isNaN(maxTimes))
+		{
+			alert('Error: Max times is not a number');
+			return;
+		}
+		this.mRunForNumberOfTimes = maxTimes;
+		//this.SetValue(this.mGMKeyMaxNumberOfTimes, maxTimes);
+	}
+	
+	this.RunForSeconds = function(seconds)
+	{
+		if(isNaN(seconds))
+		{
+			alert('Error: Max times is not a number');
+			return;
+		}
+		this.mRunForSeconds = seconds;
+		//this.SetValue(this.mGMKeyDurationInSeconds, seconds);
+	}
+	
+	this.RunForMinutes = function(minutes)
+	{
+		this.RunForSeconds(minutes * 60);
+	}
+	
+	this.RunForHours = function(hours)
+	{
+		this.RunForSeconds(hours * 3600);
+	}
+	
 	//Member variables
 	this.mLastRun = 0;
 	this.mRunFunction = methodToCall;
 	this.mIntervalInSeconds = intervalInSeconds;
+	this.mRunForSeconds = -1;
+	this.mRunForNumberOfTimes = -1;
 	this.mCreated = new Date();
 	this.mFuntionName = this.GetFunctionName(methodToCall);
-	this.mGMKeyName = 'GM_Scheduler_LastRun_' + this.mFuntionName;
+	this.mGMKeyName = 'GM_Scheduler_' + this.mFuntionName;
+	this.mGMKeyLastRun = this.mGMKeyName + '_LastRun';
 	this.mGMKeyAllStopped = this.mGMKeyName + '_AllSessionsStopped';
+	this.mGMKeyCurrentNumberOfTimes = this.mGMKeyName + '_CurrentCount';
+	this.mGMKeyMaxNumberOfTimes = this.mGMKeyName + '_MaxCount';
+	this.mGMKeyFirstStartTime = this.mGMKeyName + '_FirstStartTime';
+	this.mGMKeyDurationInSeconds = this.mGMKeyName + '_Duration';
 	this.mGUID = this.GenerateGUID();
 	this.mActive = false;
 	this.Log = this.IsUndefined(logMethod) ? function() {} : logMethod;
 	this.SetValue = setValueMethod;
 	this.GetValue = getValueMethod;
 }
-
