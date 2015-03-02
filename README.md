@@ -1,5 +1,5 @@
 # GM_Scheduler
-A simple Javascript Task Scheduler primarily written to run on GreaseMonkey scripts, but can be used otherwise. The scheduler makes sure it runs the task only once in the given time interval, irrespective of the number of pages it concurrently runs upon.
+A simple Javascript Task Scheduler primarily written to run on GreaseMonkey scripts, but can be used otherwise. The scheduler makes sure it runs the task only once in the given time interval, irrespective of the number of pages it concurrently runs upon. You can use it to schedule your Tasks every few seconds/minutes/hours/days on the websites you want. Want to check the availability of your desired new product on a website? Just write a task and just run it using GM_Scheduler! 
 
 To use it, you have to provide a couple of methods which can set and get a persistent value across sessions(and an optional Log method if you prefer), just like the GM_setValue and GM_getValue methods are(. If you are not working with GreaseMonkey, other methods like offlineStorage or methods using Local database transactions would work best. 
 
