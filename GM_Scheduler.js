@@ -142,6 +142,19 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 		this.mActive = false;
 	}
 	
+	this.ClearValues = function()
+	{
+		if(!this.DeleteValue)
+			return;
+
+		this.DeleteValue(this.mGMKeyLastRun);
+		this.DeleteValue(this.mGMKeyAllStopped);
+		this.DeleteValue(this.mGMKeyCurrentNumberOfTimes);
+		this.DeleteValue(this.mGMKeyMaxNumberOfTimes);
+		this.DeleteValue(this.mGMKeyFirstStartTime);
+		this.DeleteValue(this.mGMKeyDurationInSeconds);
+	}
+	
 	//Start after resetting all (Time/Number) counters. Call it only once from one of the scripts. 
 	this.Restart = function()
 	{
@@ -171,19 +184,28 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 		return (typeof obj == "undefined" || !obj);
 	}
 	
+	//Set a method for setting a named key with a persistent value, e.g. GM_setValue(key, value)	
 	this.SetMethodSetValue = function(func)
 	{
 		this.SetValue = func;
 	}
 	
+	//Set a method for getting a persistent value with its key, e.g. GM_getValue(key, defaultValue)
 	this.SetMethodGetValue = function(func)
 	{
 		this.GetValue = func;
 	}
 	
+	//Set an optional method for logging messages for your debugging purposes, e.g. GM_log or console.log
 	this.SetMethodLog = function(func)
 	{
 		this.Log = this.IsUndefined(func) ? function() {} : func;
+	}
+	
+	//Set an optional method for deleting the storage value by name, e.g. GM_deleteValue
+	this.SetMethodDeleteValue = function(func)
+	{
+		this.DeleteValue = this.IsUndefined(func) ? function() {} : func;
 	}
 	
 	this.RunForNumberOfTimes = function(maxTimes)
@@ -238,4 +260,5 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 	this.Log = this.IsUndefined(logMethod) ? function() {} : logMethod;
 	this.SetValue = setValueMethod;
 	this.GetValue = getValueMethod;
+	this.DeleteValue = null;
 }
