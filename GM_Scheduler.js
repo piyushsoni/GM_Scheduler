@@ -1,10 +1,10 @@
 // GM_Scheduler 
-// Version 2.62
+// Version 2.67
 // Copyright: Piyush Soni (http://piyushsoni.com)
 // License : CC BY-SA (http://creativecommons.org/licenses/by-sa/4.0/)
 //----
 
-function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, setValueMethod /*function*/, getValueMethod /*function*/, logMethod /*function*/)
+function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, setValueMethod /*function*/, getValueMethod /*function*/)
 {
 	//Methods
 	this.GetFunctionName = function(fun)
@@ -60,7 +60,7 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 			this.Log(this.mGUID + ": " + this.mFuntionName + ' not executed,  ' + (this.mIntervalInSeconds - timeElapsed) + ' seconds remaining.');
 			//Schedule it to run after the remaining time. 
 			//Minimize race conditions. Get the same value a few times. 
-			if(this.mActive && !this.GetValue(this.mGMKeyAllStopped, true) && !this.GetValue(this.mGMKeyAllStopped, true) && !this.GetValue(this.mGMKeyAllStopped, true) && !this.GetValue(this.mGMKeyAllStopped, true))
+			if(this.mActive && !this.GetValue(this.mGMKeyAllStopped, true) && !this.GetValue(this.mGMKeyAllStopped, true))
 				window.setTimeout(function() { thisObject.Test();}, (this.mIntervalInSeconds - timeElapsed) * 1000);
 			return;
 		}
@@ -68,14 +68,14 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 		{
 			//Execute
 			//Minimize race conditions. Get the same value a few times. 
-			if(this.mActive && !this.GetValue(this.mGMKeyAllStopped, true) && !this.GetValue(this.mGMKeyAllStopped, true) && !this.GetValue(this.mGMKeyAllStopped, true) && !this.GetValue(this.mGMKeyAllStopped, true))
+			if(this.mActive && !this.GetValue(this.mGMKeyAllStopped, true) && !this.GetValue(this.mGMKeyAllStopped, true))
 			{
 				if(this.mRunForNumberOfTimes > 0)
 					this.SetValue(this.mGMKeyCurrentNumberOfTimes, (currentNumberOfTimes + 1));
 				if(this.mRunForSeconds > 0 && this.GetValue(this.mGMKeyFirstStartTime, 0) == 0)
-					this.SetValue(this.mGMKeyFirstStartTime, currentTime);
+					this.SetValue(this.mGMKeyFirstStartTime, currentTime.toISOString());
 					
-				this.SetValue(this.mGMKeyLastRun, currentTime);
+				this.SetValue(this.mGMKeyLastRun, currentTime.toISOString());
 				this.mRunFunction();
 				this.Log(this.mGUID + ": " + this.mFuntionName + ' executed.');
 				window.setTimeout(function() { thisObject.Test(); }, (this.mIntervalInSeconds) * 1000);
@@ -109,9 +109,9 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 		if(dontCallAtTimeZero)
 		{
 			var currentTime = new Date();
-			this.SetValue(this.mGMKeyLastRun, currentTime);
+			this.SetValue(this.mGMKeyLastRun, currentTime.toISOString());
 			if(this.GetValue(this.mGMKeyFirstStartTime, 0) == 0)
-				this.SetValue(this.mGMKeyFirstStartTime, currentTime);
+				this.SetValue(this.mGMKeyFirstStartTime, currentTime.toISOString());
 		}
 		
 		this.Test();
@@ -199,7 +199,8 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 	//Set an optional method for logging messages for your debugging purposes, e.g. GM_log or console.log
 	this.SetMethodLog = function(func)
 	{
-		this.Log = this.IsUndefined(func) ? function() {} : func;
+		if(!this.IsUndefined(func))
+			this.Log = function(str) {if(this.mLogEnabled) func(str);}
 	}
 	
 	//Set an optional method for deleting the storage value by name, e.g. GM_deleteValue
@@ -240,6 +241,11 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 		this.RunForSeconds(hours * 3600);
 	}
 	
+	this.EnableLog = function(isLogEnabled)
+	{
+		this.mLogEnabled = isLogEnabled;
+	}
+	
 	//Member variables
 	this.mLastRun = 0;
 	this.mRunFunction = methodToCall;
@@ -257,7 +263,8 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 	this.mGMKeyDurationInSeconds = this.mGMKeyName + '_Duration';
 	this.mGUID = this.GenerateGUID();
 	this.mActive = false;
-	this.Log = this.IsUndefined(logMethod) ? function() {} : logMethod;
+	this.mLogEnabled = false;
+	this.Log = function(str) {if(this.mLogEnabled) console.log(str);}
 	this.SetValue = setValueMethod;
 	this.GetValue = getValueMethod;
 	this.DeleteValue = null;
