@@ -1,7 +1,7 @@
 # GM_Scheduler
 A simple Javascript Task Scheduler primarily written to run on GreaseMonkey scripts, but can be used otherwise. The scheduler makes sure it runs the task only once in the given time interval, irrespective of the number of pages it concurrently runs upon. You can use it to schedule your Tasks every few seconds/minutes/hours/days on the websites you want. Want to check the availability of your desired new product on a website? Just write a check task and run it using GM_Scheduler on all the pages you want! 
 
-To use it, you have to provide a couple of methods which can set and get a persistent value across sessions(and an optional Log method if you prefer), just like the GM_setValue and GM_getValue methods are(. If you are not working with GreaseMonkey, other methods like offlineStorage or methods using Local database transactions would work best. 
+To use it, you have to provide a couple of methods which can set and get a persistent value across sessions(and an optional Log method if you prefer), just like the GM_setValue and GM_getValue methods are. If you are not working with GreaseMonkey, other methods like offlineStorage or methods using Local database transactions would work best. 
 
 If you are using it with GreaseMonkey, this is how you initiate and start the scheduler: 
 
@@ -10,7 +10,6 @@ Add this script to your userscript using the require tag, and make sure the requ
 ```javascript
 // @grant       GM_setValue
 // @grant       GM_getValue
-// @grant       GM_log
 // @require		https://raw.githubusercontent.com/piyushsoni/GM_Scheduler/master/GM_Scheduler.js
 ````
 
@@ -26,7 +25,7 @@ function callback()
 ````
 
 ```javascript
-var scheduler = new GM_Scheduler(callback, 3600 /*run every hour*/, GM_setValue, GM_getValue, GM_log);  
+var scheduler = new GM_Scheduler(callback, 3600 /*run every hour*/, GM_setValue, GM_getValue);  
 scheduler.Start();  
 ````
 
@@ -57,3 +56,16 @@ In case you want to stop only a given instance of your Script (for a particular 
 ```javascript
 scheduler.Stop(true);
 ````
+
+To enable logging, just call  
+```javascript
+scheduler.EnableLog(true);  
+````
+
+By default, this uses the browser's console.log method, but can be overridden by calling scheduler.SetMethodLog(func). To use GreaseMonkey's GM_log instead of console.log, just call : 
+```javascript
+scheduler.SetMethodLog(GM_log);  
+````
+
+(Remember: you still need to enable log by calling the EnableLog function for logging to work)
+
