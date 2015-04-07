@@ -1,10 +1,10 @@
 // GM_Scheduler 
-// Version 2.67
+// Version 2.75
 // Copyright: Piyush Soni (http://piyushsoni.com)
 // License : CC BY-SA (http://creativecommons.org/licenses/by-sa/4.0/)
 //----
 
-function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, setValueMethod /*function*/, getValueMethod /*function*/)
+function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, setValueMethod /*function, optional*/, getValueMethod /*function, optional*/)
 {
 	//Methods
 	this.GetFunctionName = function(fun)
@@ -86,16 +86,8 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 	this.Start = function(dontCallAtTimeZero /*bool - set to true to not to call the method at the beginning and wait for the interval instead*/)
 	{
 		//Verify input methods. 
-		if(this.IsUndefined(this.GetValue))
-		{
-			alert("GM_Scheduler: GetValue method not set, did not start.");
+		if(!this.VerifyMandatoryMethods())
 			return;
-		}
-		if(this.IsUndefined(this.SetValue))
-		{
-			alert("GM_Scheduler: SetValue method not set, did not start.");
-			return;
-		}
 		
 		this.mActive = true;
 		
@@ -114,7 +106,67 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 				this.SetValue(this.mGMKeyFirstStartTime, currentTime.toISOString());
 		}
 		
+		this.Log(this.mGUID + ": " + "Calling Test() method now");
 		this.Test();
+	}
+	
+	this.StartAt = function(date)
+	{
+		if(!date || typeof date != "object" || !date.getHours)
+		{
+			alert("Error! Date object expected");
+			return;
+		}
+
+		this.Log(this.mGUID + ": " + "Will attempt to start at : " + date);
+		
+		//Verify input methods. 
+		if(!this.VerifyMandatoryMethods())
+			return;
+		
+		var currentTime = new Date();
+		this.SetValue(this.mGMKeyScheduledToStartAt, currentTime.toISOString());
+		this.SetValue(this.mGMKeyScheduledToStartFor, date.toISOString());
+		
+		var timeRemaining = (date - currentTime); //milliseconds
+		if(timeRemaining <= 0)
+		{
+			this.Start();
+		}
+		else
+		{
+			this.Log(this.mGUID + ": " + "Time remaining: " + timeRemaining + " milliseconds");
+			var thisObject = this;
+			window.setTimeout(function() { thisObject.Start(); }, timeRemaining);
+		}
+	}
+	
+	this.StartTodayAt = function(hours, minutes, seconds)
+	{
+		if(!seconds)
+			seconds = 0;
+		if(!minutes)
+			minutes = 0;
+		var date = new Date();
+		date.setHours(hours);
+		date.setMinutes(minutes);
+		date.setSeconds(seconds);
+		this.StartAt(date);
+	}
+	
+	this.StartTomorrowAt = function(hours, minutes, seconds)
+	{
+		if(!seconds)
+			seconds = 0;
+		if(!minutes)
+			minutes = 0;
+		var date = new Date();
+		date.setTime(date.getTime() + (24 * 60 * 60 * 1000));
+		date.setHours(hours);
+		date.setMinutes(minutes);
+		date.setSeconds(seconds);
+		
+		this.StartAt(date);
 	}
 	
 	this.Stop = function(stopJustThisSession /*stops all by default*/)
@@ -145,7 +197,10 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 	this.ClearValues = function()
 	{
 		if(!this.DeleteValue)
+		{
+			alert('please set the DeleteValue method (e.g. : GM_deleteValue) using the SetMethodDeleteValue method');
 			return;
+		}
 
 		this.DeleteValue(this.mGMKeyLastRun);
 		this.DeleteValue(this.mGMKeyAllStopped);
@@ -182,6 +237,23 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 	this.IsUndefined = function(obj)
 	{
 		return (typeof obj == "undefined" || !obj);
+	}
+	
+	this.VerifyMandatoryMethods = function()
+	{
+		if(this.IsUndefined(this.GetValue))
+		{
+			alert("GM_Scheduler: GetValue method not set, did not start.");
+			return false;
+		}
+		
+		if(this.IsUndefined(this.SetValue))
+		{
+			alert("GM_Scheduler: SetValue method not set, did not start.");
+			return false;
+		}
+		
+		return true;
 	}
 	
 	//Set a method for setting a named key with a persistent value, e.g. GM_setValue(key, value)	
@@ -261,11 +333,13 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 	this.mGMKeyMaxNumberOfTimes = this.mGMKeyName + '_MaxCount';
 	this.mGMKeyFirstStartTime = this.mGMKeyName + '_FirstStartTime';
 	this.mGMKeyDurationInSeconds = this.mGMKeyName + '_Duration';
+	this.mGMKeyScheduledToStartAt = this.mGMKeyName + '_ScheduledAt';
+	this.mGMKeyScheduledToStartFor = this.mGMKeyName + '_ScheduledFor';
 	this.mGUID = this.GenerateGUID();
 	this.mActive = false;
 	this.mLogEnabled = false;
 	this.Log = function(str) {if(this.mLogEnabled) console.log(str);}
-	this.SetValue = setValueMethod;
-	this.GetValue = getValueMethod;
-	this.DeleteValue = null;
+	this.SetValue = (this.IsUndefined(setValueMethod) && !this.IsUndefined(GM_setValue)) ? GM_setValue: setValueMethod; //GM_setValue is the default
+	this.GetValue = (this.IsUndefined(getValueMethod) && !this.IsUndefined(GM_getValue)) ? GM_getValue: getValueMethod; //GM_getValue is the default
+	this.DeleteValue = this.IsUndefined(GM_deleteValue) ? null : GM_deleteValue; 
 }
