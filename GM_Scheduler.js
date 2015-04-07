@@ -1,5 +1,5 @@
 // GM_Scheduler 
-// Version 2.75
+// Version 2.76
 // Copyright: Piyush Soni (http://piyushsoni.com)
 // License : CC BY-SA (http://creativecommons.org/licenses/by-sa/4.0/)
 //----
@@ -198,7 +198,7 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 	{
 		if(!this.DeleteValue)
 		{
-			alert('please set the DeleteValue method (e.g. : GM_deleteValue) using the SetMethodDeleteValue method');
+			alert('please set the DeleteValue method (e.g. : GM_deleteValue) using the SetMethodDeleteValue method. You can either use @grant GM_deleteValue or use your own one argument method');
 			return;
 		}
 
@@ -236,20 +236,20 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 	
 	this.IsUndefined = function(obj)
 	{
-		return (typeof obj == "undefined" || !obj);
+		return (typeof obj == typeof undefined || !obj);
 	}
 	
 	this.VerifyMandatoryMethods = function()
 	{
 		if(this.IsUndefined(this.GetValue))
 		{
-			alert("GM_Scheduler: GetValue method not set, did not start.");
+			alert("GM_Scheduler: GetValue method not set, did not start. You may use @grant GM_getValue, or set your own persistent GetValue method.");
 			return false;
 		}
 		
 		if(this.IsUndefined(this.SetValue))
 		{
-			alert("GM_Scheduler: SetValue method not set, did not start.");
+			alert("GM_Scheduler: SetValue method not set, did not start. You may use @grant GM_setValue, or set your own persistent SetValue method.");
 			return false;
 		}
 		
@@ -318,6 +318,15 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 		this.mLogEnabled = isLogEnabled;
 	}
 	
+	if(typeof GM_setValue != typeof Function)
+		GM_setValue = null;
+	if(typeof GM_getValue != typeof Function)
+		GM_getValue = null;
+	if(typeof GM_log != typeof Function)
+		GM_log = null;
+	if(typeof GM_deleteValue != typeof Function)
+		GM_deleteValue = null;
+		
 	//Member variables
 	this.mLastRun = 0;
 	this.mRunFunction = methodToCall;
@@ -338,6 +347,8 @@ function GM_Scheduler(methodToCall /*function*/, intervalInSeconds /*integer*/, 
 	this.mGUID = this.GenerateGUID();
 	this.mActive = false;
 	this.mLogEnabled = false;
+	
+	//Member functions
 	this.Log = function(str) {if(this.mLogEnabled) console.log(str);}
 	this.SetValue = (this.IsUndefined(setValueMethod) && !this.IsUndefined(GM_setValue)) ? GM_setValue: setValueMethod; //GM_setValue is the default
 	this.GetValue = (this.IsUndefined(getValueMethod) && !this.IsUndefined(GM_getValue)) ? GM_getValue: getValueMethod; //GM_getValue is the default
